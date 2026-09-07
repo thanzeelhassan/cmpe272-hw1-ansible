@@ -1,0 +1,44 @@
+---
+- name: Undeploy webserver from both VMs
+  hosts: webservers
+  become: true
+
+  tasks:
+    - name: Stop Nginx
+      service:
+        name: nginx
+        state: stopped
+      ignore_errors: true
+
+    - name: Disable Nginx
+      service:
+        name: nginx
+        enabled: false
+      ignore_errors: true
+
+    - name: Remove SJSU site configuration
+      file:
+        path: /etc/nginx/sites-enabled/sjsu
+        state: absent
+
+    - name: Remove SJSU site
+      file:
+        path: /etc/nginx/sites-available/sjsu
+        state: absent
+
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Remove web page
+      file:
+        path: /var/www/html/index.html
+        state: absent
+
+    - name: Uninstall Nginx
+      apt:
+        name: nginx
+        state: absent
+        purge: true
+        autoremove: true
