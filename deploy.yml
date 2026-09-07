@@ -1,0 +1,53 @@
+---
+- name: Deploy webserver on both VMs
+  hosts: webservers
+  become: true
+
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: true
+
+    - name: Create web page
+      copy:
+        content: "Hello World from SJSU-{{ '1' if inventory_hostname == 'VM1' else '2' }}\n"
+        dest: /var/www/html/index.html
+        mode: '0644'
+
+    - name: Configure Nginx to listen on port 8080
+      copy:
+        content: |
+          server {
+              listen 8080;
+              listen [::]:8080;
+
+              root /var/www/html;
+              index index.html;
+
+              server_name _;
+
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+          }
+        dest: /etc/nginx/sites-available/sjsu
+        mode: '0644'
+
+    - name: Enable SJSU site
+      file:
+        src: /etc/nginx/sites-available/sjsu
+        dest: /etc/nginx/sites-enabled/sjsu
+        state: link
+
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+        enabled: true
